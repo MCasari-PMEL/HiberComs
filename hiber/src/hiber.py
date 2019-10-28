@@ -149,25 +149,8 @@ class LPGAN_API_Rx:
     def __init__(self):
         pass
 
-    # @staticmethod
-    # def parse_api_message(message):
-    #     if message.startswith("API"):
-    #         message = message[:message.find(')')]
-    #         result = message[message.find("API(") + 4 :].strip().strip(")").split(":",1)
-    #         if len(result) > 1:
-    #             result[1] = result[1].split(";")
-    #             result[1] = [result.lstrip() for result in result[1]]
-    #         else:
-    #             result = [result[0], []]
-    #     elif message.startswith("Hiber API "):
-    #         pass
-    #     else:
-    #         raise ValueError("Invalid API Rx string")
-    #     print(result)
-    #     return result
-
     @staticmethod
-    def parse_api_message2(message, error_handling=False):
+    def parse_api_message(message, error_handling=False):
         if message.startswith("API"):
             message = message[:message.find(')')]
             result = message[message.find("API(") + 4 :].strip().strip(")").split(":",1)
@@ -193,10 +176,7 @@ class LPGAN_API_Rx:
 
     @classmethod
     def set_gps_mode(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         if results[0].strip() == "0":
             return False
         else:
@@ -204,24 +184,15 @@ class LPGAN_API_Rx:
 
     @classmethod
     def do_gps_fix(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
     @classmethod
     def get_firmware_version(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         return {'firmware_version':results[0]}
 
     @classmethod
     def get_modem_info(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         results = {
             'HW_TYPE_STR':results[0],
             'HW_TYPE_INT':int(results[1]),
@@ -233,17 +204,11 @@ class LPGAN_API_Rx:
 
     @classmethod
     def set_modem_number(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        cls.parse_api_message2(message, True)
+        cls.parse_api_message(message, True)
 
     @classmethod
     def get_location(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         results = {
             'latitude':float(results[0]),
             'longitude':float(results[1]),
@@ -256,10 +221,7 @@ class LPGAN_API_Rx:
 
     @classmethod
     def set_location(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         results = {
             'latitude':float(results[0]),
             'longitude':float(results[1]),
@@ -271,26 +233,17 @@ class LPGAN_API_Rx:
         return results
     @classmethod
     def get_datetime(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         return {'datetime':results[0]}
 
     @classmethod
     def set_datetime(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         return {'datetime':results[0]}
 
     @classmethod
     def get_next_alarm(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         results = {
             'alarm_id':int(results[0]),
             'seconds_left_until_alarm':int(results[1])
@@ -299,17 +252,13 @@ class LPGAN_API_Rx:
 
     @classmethod
     def get_next_pass(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         return {'seconds_left_until_pass':int(results[0])}
         
 
     @classmethod
     def go_to_sleep(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        [error, results] = cls.parse_api_message2(message, False)
+        [error, results] = cls.parse_api_message(message, False)
         if "603" == error:
             raise Warning(error)
         elif ("600" != error) and ("602" != error):
@@ -322,20 +271,12 @@ class LPGAN_API_Rx:
 
     @classmethod
     def toggle_payload_over_debug(cls, message):
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         return {'toggle_enabled':bool(results[0])}
 
     @classmethod
     def set_payload(cls, message):
-        results = cls.parse_api_message2(message, True)
+        results = cls.parse_api_message(message, True)
         print(results)
 
         return {'payload_bytes':int(results[0])}
-
-        # [error, results] = cls.parse_api_message(message)
-        # if "600" != error:
-        #     raise ValueError(ERROR_CODES[error])
-        # return {'payload_bytes':int(results[0])}

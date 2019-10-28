@@ -11,20 +11,20 @@ from hiber import LPGAN_API_Rx
 def test_parse_api_return_should_fail_for_bad_return_string():
     # Valid returns strings start with API or Hiber API
     with pytest.raises(ValueError):
-        LPGAN_API_Rx.parse_api_message2('Invalid entry')
+        LPGAN_API_Rx.parse_api_message('Invalid entry')
 
 def test_parse_api_should_split_error_codes():
-    assert ['600', []] == LPGAN_API_Rx.parse_api_message2('API(600)\r\n')
+    assert ['600', []] == LPGAN_API_Rx.parse_api_message('API(600)\r\n')
 
 def test_parse_api_should_split_error_and_single_value_return():
-    assert ['600', ['20']] == LPGAN_API_Rx.parse_api_message2('API(600: 20)') 
+    assert ['600', ['20']] == LPGAN_API_Rx.parse_api_message('API(600: 20)') 
 
 def test_parse_api_should_split_error_and_multiple_value_returns():
-    assert ['600', ['20','40','60', '80','100']] == LPGAN_API_Rx.parse_api_message2('API(600: 20; 40; 60; 80;100)\r\n')
+    assert ['600', ['20','40','60', '80','100']] == LPGAN_API_Rx.parse_api_message('API(600: 20; 40; 60; 80;100)\r\n')
 
 def test_parse_api_should_split_and_ignore_funky_time_post_message_bs():
     api = 'API(600: 2019-02-25T16:13:38Z) Current date: 2019-02-25T16:13:38Z\r\n'
-    results = LPGAN_API_Rx.parse_api_message2(api)
+    results = LPGAN_API_Rx.parse_api_message(api)
 
     assert ['600', ['2019-02-25T16:13:38Z']] == results
 
