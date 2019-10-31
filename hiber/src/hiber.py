@@ -1,5 +1,8 @@
 import re
+import time
 import datetime
+import serial
+from collections import namedtuple
 
 
 class LPGAN_API_Tx:
@@ -192,7 +195,9 @@ class LPGAN_API_Rx:
 
     @classmethod
     def get_modem_info(cls, message):
+        print(message)
         results = cls.parse_api_message(message, True)
+        print(results)
         results = {
             'HW_TYPE_STR':results[0],
             'HW_TYPE_INT':int(results[1]),
@@ -280,3 +285,249 @@ class LPGAN_API_Rx:
         print(results)
 
         return {'payload_bytes':int(results[0])}
+
+
+modem_info = namedtuple(
+    'Modem', [
+        'firmware_version',
+        'HW_TYPE_STR',
+        'HW_TYPE_INT',
+        'FW_VERSION',
+        'MODEM_NO_STR',
+        'MODEM_NO_INT',
+        'seconds_since_last_fix',
+        'seconds_until_next_fix',
+        'alarm_id',
+        'seconds_left_until_alarm',
+        'seconds_left_until_pass',
+        'datetime',
+        'toggle_enabled'
+    ]
+)
+
+TIME_DELTA = 15
+class Hiber:
+    def __init__(self, port=[], baudrate=19200, arduino=False):
+        # Serial Port setup
+        if not re.match(r'^COM[\d]+$', port):
+            raise ValueError('Invalid COM Port')
+        if baudrate not in serial.Serial.BAUDRATES:
+            raise ValueError('Not a valid baudrate')
+        self._ser = serial.Serial()
+        self._ser.port = port
+        self._ser.baudrate = baudrate
+        self._ser.bytesize = 8
+        self._ser.parity = 'N'
+        self._ser.stopbits = 1
+        self._ser.timeout = 10
+
+        self.modem = {
+            'firmware_version':[],
+            'HW_TYPE_STR':[],
+            'HW_TYPE_INT':[],
+            'FW_VERSION':[],
+            'MODEM_NO_STR':[],
+            'MODEM_NO_INT':[],
+            'seconds_since_last_fix':[],
+            'seconds_until_next_fix':[],
+            'seconds_left_until_alarm':[],
+            'seconds_left_until_pass':[],
+            'latitude':[],
+            'longitude':[],
+            'altitude':[],
+            'alarm_id':[],
+            'datetime':[],
+            'toggle_enabled':[]
+        }
+        # self.modem = modem_info(
+        #     firmware_version = [],
+        #     HW_TYPE_STR = [],
+        #     HW_TYPE_INT = [],
+        #     FW_VERSION = [],
+        #     MODEM_NO_STR = [],
+        #     MODEM_NO_INT = [],
+        #     seconds_since_last_fix = [],
+        #     seconds_until_next_fix = [],
+        #     seconds_left_until_alarm = [],
+        #     seconds_left_until_pass = [],
+        #     alarm_id = [],
+        #     datetime = [],
+        #     toggle_enabled = []
+        # )
+
+        self._arduino = arduino
+
+    def start(self):
+        '''
+        Start sequence for Hiber modem.
+        '''
+        try:
+            self._ser.open()
+            time.sleep(2.0)
+        except Exception as e:
+            print(e)
+
+        # self.ard_write("get_firmware_version")
+        # print(self._ser.readline())
+
+    def ard_write(self, command):
+        '''
+        Arduino write command.
+
+        For testing using the Arduino passthrough.  Arduino takes 
+        the following commands:
+        Modem:(string)\r\n: Modem message (hiber command)
+
+        Args:
+            command: command string
+        Returns:
+            send_str: String sent to Arduino
+        ''' 
+        send_str = "Modem:" + command + "\r\n"
+        # print(send_str)
+        self._ser.write(send_str.encode())
+        return send_str
+
+    def ard_wakeup(self, state):
+        '''
+        Arduino wakeup pin set
+
+        For testing using the Arduino passthrough.  Arduinot takes
+        the following command:
+
+        Wakeup:(bool)\r\n: Wakeup pin state
+
+        Args:
+            state:  On=True, Off=False
+        '''
+
+    def initalization(self):
+        '''
+        Hiber Modem initialization sequence.
+        '''
+        step_cnt = 0
+        print("**Initialization Start**")
+
+        print(f"Start {step_cnt}:  Modem Toggle Payload over Debug")
+        self._modem_toggle_payload_over_debug()
+        step_cnt += 1
+
+        print(f"Start {step_cnt}:  Modem Get Info")
+        self._modem_get_info()
+        step_cnt += 1
+
+        print(f"Start {step_cnt}:  Modem Firmware Version")
+        self._modem_get_firmware_version()
+        step_cnt += 1
+        
+        print(f"Start {step_cnt}:  Modem Get Time")
+        self._modem_get_time()
+        step_cnt += 1
+
+        # print(f"Start {step_cnt}:  Modem Set Time")
+        # self._modem_set_time()
+        # step_cnt += 1
+
+    def _modem_toggle_payload_over_debug(self):
+        message = LPGAN_API_Tx.toggle_payload_over_debug(True)
+        if self._arduino:
+            self.ard_write(message)
+
+        result = self._ser.readline().decode()
+        LPGAN_API_Rx.toggle_payload_over_debug(result)
+    
+    def _modem_get_info(self):
+        message = LPGAN_API_Tx.get_modem_info()
+        if self._arduino:
+            self.ard_write(message)
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.get_modem_info(result)
+
+        self.modem['HW_TYPE_STR'] = result['HW_TYPE_STR']
+        self.modem['HW_TYPE_INT'] = result['HW_TYPE_INT']
+        self.modem['FW_VERSION'] = result['FW_VERSION']
+        self.modem['MODEM_NO_STR'] = result['MODEM_NO_STR']
+        self.modem['MODEM_NO_INT'] = result['MODEM_NO_INT']
+
+    def _modem_get_firmware_version(self):
+        message = LPGAN_API_Tx.get_firmware_version()
+        if self._arduino:
+            self.ard_write(message)
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.get_firmware_version(result)
+        self.modem['firmware_version'] = result['firmware_version']
+
+    def _modem_set_time(self, dt=datetime.datetime.now()):
+        message = LPGAN_API_Tx.set_datetime(dt)
+        if self._arduino:
+            self.ard_write(message)
+        
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.set_datetime(result)
+        self.modem['datetime'] = result['datetime']
+
+    def _modem_get_time(self):
+        message = LPGAN_API_Tx.get_datetime()
+        if self._arduino:
+            self.ard_write(message)
+
+        result = self._ser.readline().decode()
+        now = datetime.datetime.now()
+        result = LPGAN_API_Rx.get_datetime(result);
+        dt_result = datetime.datetime.strptime(result['datetime'], '%Y-%m-%dT%H:%M:%SZ')
+
+        time_diff = dt_result - now
+
+        if (time_diff.total_seconds() > TIME_DELTA) or (time_diff.total_seconds()) < -TIME_DELTA:
+            print("->Time Difference ({time_diff.total_seconds()}) > {TIME_DELTA}, Resetting Modem Time")
+            self._modem_set_time()
+
+    def set_location(self, latitude, longitude, altitude):
+        message = LPGAN_API_Tx.set_location(latitude, longitude, altitude)
+        if self._arduino:
+            self.ard_write(message)
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.set_location(result)
+
+        self.modem['latitude'] = result['latitude']
+        self.modem['longitude'] = result['longitude']
+        self.modem['altitude'] = result['altitude']
+        self.modem['seconds_until_next_fix'] = result['seconds_until_next_fix']
+        self.modem['seconds_since_last_fix'] = result['seconds_since_last_fix']
+
+    def get_location(self):
+        message = LPGAN_API_Tx.get_location()
+        if self._arduino:
+            self.ard_write(message)
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.get_location(result)
+
+        return result
+
+    def get_next_pass(self):
+        message = LPGAN_API_Tx.get_next_pass()
+        if self._arduino:
+            self.ard_write(message)
+        result = self._ser.readline().decode()
+        result = LPGAN_API_Rx.get_next_pass(result)
+
+        self.modem['seconds_left_until_pass'] = result['seconds_left_until_pass']
+
+        return result
+
+if __name__ == "__main__":
+    test_lat = 47.686449
+    test_lon = -122.254220
+    test_elev = 1.5
+
+    h = Hiber('COM14',19200,arduino=True)
+    
+    h.start()
+    
+    h.initalization()
+
+    h.set_location(test_lat, test_lon, test_elev)
+
+    print(h.get_location())
+
+    print(h.get_next_pass())

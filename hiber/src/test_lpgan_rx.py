@@ -64,6 +64,16 @@ def test_get_modem_info_should_return_all_modem_info():
     assert '27AA 0DD8' == results['MODEM_NO_STR']
     assert 665456088 == results['MODEM_NO_INT']
 
+def test_modem_get_info_with_actual_return_from_gamma_device():
+    message = 'API(600: GAMMA; 2; 1; unset; 0)'
+    results = LPGAN_API_Rx.get_modem_info(message)
+
+    assert 'GAMMA' == results['HW_TYPE_STR']
+    assert 2 == results['HW_TYPE_INT']
+    assert '1' == results['FW_VERSION']
+    assert 'unset' == results['MODEM_NO_STR']
+    assert 0 == results['MODEM_NO_INT']
+
 def test_get_modem_info_should_raise_exception_for_error():
     with pytest.raises(ValueError):
         LPGAN_API_Rx.get_modem_info('API(136)')
